@@ -2,19 +2,76 @@
 
 
 ## Loading and preprocessing the data
+```{r}
+dataFile <- 'activity.csv'
+if (!file.exists(dataFile)) {
+  unzip(zipfile='activity.zip')
+}
 
+data <- read.csv(dataFile)
+data$date <- as.Date(data$date)
+
+summary(data)
+
+dataNoNa = na.omit(data)
+```
 
 
 ## What is mean total number of steps taken per day?
 
+Sum the steps taken grouped by date.
+```{r}
+dailySteps <- aggregate(dataNoNa$steps, list(day = dataNoNa$date), sum)
+```
 
+Histogram of daily steps.
+```{r}
+library("lattice")
+histogram(dailySteps$x)
+```
+
+Mean and median
+```{r}
+mean(dailySteps$x, na.rm=TRUE)
+median(dailySteps$x, na.rm=TRUE)
+```
 
 ## What is the average daily activity pattern?
 
+```{r}
+intervalSteps <- aggregate(dataNoNa$steps, list(interval = dataNoNa$interval), mean)
+xyplot(x ~ interval, intervalSteps, type='l')
 
+data$interval[which.max(intervalSteps$x)]
+
+```
 
 ## Imputing missing values
 
+```{r}
+length(which(is.na(data$steps)))
 
+filledData <- data
+naIdx <- which(is.na(filledData$steps))
+#index of the NA items
+for (i in naIdx) {
+  filledData$steps[i] <- intervalSteps[intervalSteps$interval == data[i, 'interval'], 'x']
+}
+
+filledDailySteps <- aggregate(filledData$steps, list(day = filledData$date), sum)
+histogram(filledDailySteps$x)
+
+mean(filledDailySteps$x)
+median(filledDailySteps$x)
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+filledData$daytype <- as.factor(ifelse(weekdays( filledData$date) %in% c("Saturday","Sunday"), "Weekend", "Weekday")) 
+
+filledDataAgg = aggregate(filledData$steps, list(interval = filledData$interval, daytype=filledData$daytype), mean )
+xyplot(x ~ interval | daytype,filledDataAgg, type='l', layout=c(1,2), xlab="Interval", ylab="Number of Steps")
+
+
+```
+
