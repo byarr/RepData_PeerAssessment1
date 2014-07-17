@@ -3,12 +3,18 @@
 
 ## Loading and preprocessing the data
 
+Extract the data from the zip file if it hasn't been already.
+
 ```r
 dataFile <- 'activity.csv'
 if (!file.exists(dataFile)) {
   unzip(zipfile='activity.zip')
 }
+```
 
+Load the data into a dataframe and make the date column a date.
+
+```r
 data <- read.csv(dataFile)
 data$date <- as.Date(data$date)
 
@@ -26,27 +32,24 @@ summary(data)
 ##  NA's   :2304
 ```
 
+
+## What is mean total number of steps taken per day?
+
+Get rid of NAs for some of later analysis.
+
 ```r
 dataNoNa = na.omit(data)
 ```
 
-
-## What is mean total number of steps taken per day?
-
-Sum the steps taken grouped by date.
+Sum the steps taken grouped by date and plot as a histogram.
 
 ```r
 dailySteps <- aggregate(dataNoNa$steps, list(day = dataNoNa$date), sum)
-```
-
-Histogram of daily steps.
-
-```r
 library("lattice")
 histogram(dailySteps$x)
 ```
 
-![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
+![plot of chunk DailyStepsHistogram](figure/DailyStepsHistogram.png) 
 
 Mean and median
 
@@ -67,14 +70,14 @@ median(dailySteps$x, na.rm=TRUE)
 ```
 
 ## What is the average daily activity pattern?
-
+Find the mean mean number of steps by interval. Plot and find the max.
 
 ```r
 intervalSteps <- aggregate(dataNoNa$steps, list(interval = dataNoNa$interval), mean)
 xyplot(x ~ interval, intervalSteps, type='l')
 ```
 
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5.png) 
+![plot of chunk AverageByInterval](figure/AverageByInterval.png) 
 
 ```r
 data$interval[which.max(intervalSteps$x)]
@@ -86,6 +89,7 @@ data$interval[which.max(intervalSteps$x)]
 
 ## Imputing missing values
 
+Number of missing items.
 
 ```r
 length(which(is.na(data$steps)))
@@ -95,10 +99,12 @@ length(which(is.na(data$steps)))
 ## [1] 2304
 ```
 
+Fill the missing data by using the average number of steps for that interval.
+
+
 ```r
 filledData <- data
 naIdx <- which(is.na(filledData$steps))
-#index of the NA items
 for (i in naIdx) {
   filledData$steps[i] <- intervalSteps[intervalSteps$interval == data[i, 'interval'], 'x']
 }
@@ -107,7 +113,7 @@ filledDailySteps <- aggregate(filledData$steps, list(day = filledData$date), sum
 histogram(filledDailySteps$x)
 ```
 
-![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6.png) 
+![plot of chunk FillMissingData](figure/FillMissingData.png) 
 
 ```r
 mean(filledDailySteps$x)
@@ -134,5 +140,5 @@ filledDataAgg = aggregate(filledData$steps, list(interval = filledData$interval,
 xyplot(x ~ interval | daytype,filledDataAgg, type='l', layout=c(1,2), xlab="Interval", ylab="Number of Steps")
 ```
 
-![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7.png) 
+![plot of chunk WeekDayWeekEndCompare](figure/WeekDayWeekEndCompare.png) 
 
